@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>经营诊断助手 · 高保真</title>
+<style>
+/* ===== 设计令牌：沿用 05-前端原型 v4 色板（中性暖灰 + 主色蓝，警示橙、通过绿克制使用） ===== */
+:root{
+  --ink:#1A1B1F;--ink2:#3F4148;--sub:#6A6D74;--faint:#9C9A93;
+  --line:#E8E6E1;--line-soft:#F1F0EC;--btn-line:#D6D4CE;
+  --canvas:#F7F7F5;--paper:#FFFFFF;--head:#FAFAF8;--active:#F1F0EC;--chip:#F1F0EC;
+  --link:#2F5BD3;--link-hover:#1F3F99;--link-bg:#E9EEFB;
+  --warn:#B23A0E;--warn-bg:#FCEFE9;--warn-line:#F0CDBB;--warn-deep:#7C2D12;
+  --ok:#3F8F5F;--ok-bg:#EBF4EE;
+  --ai-bg:#F3F5FC;--ai-line:#C9D4EE;--ai-ink:#3D56A6;
+  --amber:#8A6116;--amber-bg:#F7EFDC;
+  --sh-sm:0 1px 2px rgba(26,27,31,.05);
+  --sh-md:0 4px 16px rgba(26,27,31,.09);
+  --sh-lg:0 18px 50px rgba(26,27,31,.18);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--canvas);color:var(--ink);font:13.5px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:none;padding:0}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--link);outline-offset:2px;border-radius:4px}
+::selection{background:#D8E2FA}
+
+/* ===== 演示控制：不属于产品画面 ===== */
+.demo-btn{position:fixed;top:9px;right:12px;z-index:30;background:#3F4148;color:#fff;border-radius:999px;padding:3px 13px;font-size:12px;box-shadow:var(--sh-sm)}
+.demo-btn:hover{background:#2B2C31}
+.demo-panel{position:fixed;top:42px;right:12px;z-index:30;width:306px;max-width:calc(100vw - 24px);max-height:calc(100vh - 64px);overflow:auto;background:#2E2F33;color:#F0F0EE;border-radius:12px;padding:14px 16px;font-size:12px;box-shadow:var(--sh-lg)}
+.demo-panel h4{margin:12px 0 5px;font-size:11px;color:#9FA1A7;font-weight:600;letter-spacing:.04em}
+.demo-panel label{display:flex;gap:7px;align-items:flex-start;margin:4px 0;cursor:pointer}
+.demo-panel select,.demo-panel button{background:#fff;color:#222;border:1px solid #6A6D74;border-radius:6px;padding:1px 9px;font-size:12px}
+.demo-panel button:hover{background:#EDEDEB}
+.demo-panel .note{color:#8E9096;margin-top:9px;line-height:1.5}
+
+/* ===== 布局：顶部状态栏 + 侧边栏 ===== */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:9px 20px;font-size:13px;min-height:46px}
+.topbar .crumb2{color:var(--sub)}
+.topbar .statline{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line);border-radius:999px;padding:1px 11px;font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.topbar .right{margin-left:auto;display:flex;gap:10px;align-items:center;color:var(--sub);font-size:12px;padding-right:100px;white-space:nowrap}
+.topbar .right b{color:var(--ink);font-weight:600}
+.layout{display:grid;grid-template-columns:218px minmax(0,1fr);min-height:calc(100vh - 47px)}
+nav{padding:18px 12px 20px;border-right:1px solid var(--line);background:var(--paper)}
+nav .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14.5px;margin:0 8px 16px;letter-spacing:.01em}
+nav .brand .logo{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,#3D6BE0,#1F3F99);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex:none;box-shadow:var(--sh-sm)}
+.mode{display:flex;gap:3px;background:var(--line-soft);border-radius:10px;padding:3px;margin:0 4px 16px}
+.mode button{flex:1;text-align:center;border-radius:8px;padding:4.5px 0;color:var(--sub);font-size:12.5px;transition:color .15s}
+.mode button:hover{color:var(--ink)}
+.mode button[aria-pressed=true]{background:var(--paper);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(26,27,31,.12)}
+nav .navitem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:7px 11px;border-radius:8px;margin-bottom:2px;color:var(--ink2);font-size:13px;transition:background .12s}
+nav .navitem:hover{background:var(--head)}
+nav .navitem[aria-current=page]{background:var(--active);color:var(--ink);font-weight:600}
+nav .navitem .nico{width:16px;height:16px;flex:none;opacity:.72}
+nav .navitem[aria-current=page] .nico{opacity:1}
+nav .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warn);margin-left:4px;vertical-align:2px}
+main{padding:26px 34px 72px;min-width:0;max-width:1120px}
+main.agentbg{max-width:none;background:
+  radial-gradient(640px 320px at 50% -40px,#EDF1FB 0%,rgba(237,241,251,0) 70%),
+  radial-gradient(500px 300px at 85% 100%,#F4F2EC 0%,rgba(244,242,236,0) 70%)}
+
+/* ===== 文字层级 ===== */
+h1{font-size:19px;margin:0;letter-spacing:.01em}
+.crumb{color:var(--sub);font-size:12.5px;margin:3px 0 16px}
+.muted{color:var(--sub);font-size:12.5px}
+.headline{font-size:16.5px;font-weight:650;line-height:1.5;margin:0 0 3px;letter-spacing:.01em}
+.subline{color:var(--ink2);font-size:13px}
+.amtnum{font-variant-numeric:tabular-nums}
+
+/* ===== 卡片 ===== */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:0 0 14px;box-shadow:var(--sh-sm)}
+.card.alertcard{border-left:3px solid var(--warn)}
+.sect{font-size:12px;color:var(--sub);margin-bottom:10px;font-weight:600;letter-spacing:.02em}
+.sect .soft{font-weight:normal;color:var(--faint)}
+
+/* ===== 徽标 / 引用 / 按钮 ===== */
+.chip{display:inline-block;background:var(--chip);border-radius:999px;padding:1.5px 10px;font-size:11.5px;color:var(--ink2);margin:0 4px 2px 0;white-space:nowrap;font-variant-numeric:tabular-nums}
+.chip.ai{background:var(--ai-bg);border:1px dashed var(--ai-line);color:var(--ai-ink)}
+.chip.dark,.chip.st-pending{background:var(--ink);color:#fff}
+.chip.st-adopted,.chip.st-executing{background:var(--link-bg);color:var(--link)}
+.chip.st-review{background:var(--amber-bg);color:var(--amber)}
+.chip.st-timeout{background:var(--warn-bg);color:var(--warn)}
+.chip.st-rejected,.chip.st-decided,.chip.st-revoked{background:var(--chip);color:var(--sub)}
+button.cite{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:11px;color:var(--link);margin:0 4px 3px 0;transition:border-color .12s}
+button.cite:hover{border-color:var(--link);background:var(--link-bg)}
+.btn{border:1px solid var(--btn-line);border-radius:8px;padding:4.5px 14px;font-size:13px;background:var(--paper);box-shadow:var(--sh-sm);transition:background .12s,border-color .12s}
+.btn:hover{background:var(--head);border-color:var(--faint)}
+.btn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.pri:hover{background:#000;border-color:#000}
+.btn.pri:disabled{background:#C8C7C2;border-color:#C8C7C2;cursor:not-allowed;box-shadow:none}
+.btn.sm{padding:1.5px 10px;font-size:12px;border-radius:7px}
+.btn[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.ghost{background:none;border:none;box-shadow:none;color:var(--sub);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--faint);padding:2px 2px}
+.btn.ghost:hover{color:var(--ink)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.actions .sep{flex:1}
+.num{text-decoration:none;border-bottom:1px dotted var(--faint);font-variant-numeric:tabular-nums;transition:color .12s,border-color .12s}
+.num:hover{color:var(--link);border-bottom-color:var(--link)}
+.num.neg{color:var(--warn)}
+.num.neg:hover{color:var(--warn-deep);border-bottom-color:var(--warn)}
+
+/* ===== 警示条 / 状态行 ===== */
+.warnline{border:1px solid var(--warn-line);border-left:3px solid var(--warn);background:var(--warn-bg);color:var(--warn-deep);padding:8px 14px;margin:0 0 12px;font-size:13px;font-weight:600;border-radius:8px}
+.warnline.soft{font-weight:normal;color:var(--sub);background:var(--head);border:1px solid var(--line);border-left:3px solid var(--faint)}
+.status{margin-top:9px;font-size:13px;padding:8px 13px;background:var(--head);border:1px solid var(--line-soft);border-radius:9px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.status .okmark{color:var(--ok);font-weight:600}
+
+/* ===== 表格 ===== */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:var(--sub);font-weight:600;font-size:11.5px;text-align:left;padding:5px 8px;border-bottom:1px solid var(--line);letter-spacing:.03em;white-space:nowrap}
+td{padding:9px 8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line-soft)}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td,tr:hover td{background:var(--head)}
+tr:has(th):hover th{background:none}
+td.amt,th.amt{text-align:right;font-variant-numeric:tabular-nums}
+
+/* ===== KPI ===== */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 16px 10px;box-shadow:var(--sh-sm)}
+.kpi b{display:block;font-size:21px;font-weight:650;letter-spacing:.01em;font-variant-numeric:tabular-nums;margin:1px 0}
+.kpi .d{font-size:12px;color:var(--sub)}
+.kpi b .num{border-bottom-width:2px}
+
+/* ===== 图表 ===== */
+.chart{margin:8px 0 2px}
+.chart svg{width:100%;height:auto;display:block}
+.chartnote{color:var(--sub);font-size:12px;margin-top:6px}
+
+/* ===== 周报 ② 原因条形 ===== */
+.r{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) 70px;gap:12px;align-items:center;padding:5px 0;font-size:13px}
+.r .amt{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.bar{height:10px;border-radius:5px;background:#DFA68C;max-width:100%}
+.bar.ai{background:var(--ai-bg);border:1px dashed var(--ai-line)}
+
+/* ===== 行动页 ===== */
+.action{max-width:760px}
+.cause-row{padding:11px 15px;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;background:var(--paper);cursor:pointer;box-shadow:var(--sh-sm);transition:border-color .12s,box-shadow .12s}
+.cause-row:hover{border-color:var(--faint)}
+.cause-row[aria-current=true]{border-color:var(--link);box-shadow:0 0 0 1px var(--link),var(--sh-md);cursor:default}
+.cause-row .hd{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.plan{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.plan .pt{font-weight:650;font-size:14px}
+.guards{margin-top:6px;font-size:12.5px;line-height:1.8}
+.guards .g-ok{color:var(--sub)}
+.guards .g-ok .gm{color:var(--ok);font-weight:700}
+.guards .g-bad{color:var(--warn);font-weight:600}
+input.param{width:86px;font:inherit;border:1px solid var(--btn-line);border-radius:7px;padding:2px 8px;background:var(--paper);text-align:right;font-variant-numeric:tabular-nums}
+input.param:hover{border-color:var(--faint)}
+
+/* ===== 悬浮 Agent ===== */
+.fab{position:fixed;right:20px;bottom:20px;z-index:28;background:var(--ink);color:#fff;border-radius:999px;padding:8px 18px;font-size:13px;box-shadow:0 8px 24px rgba(26,27,31,.3);transition:transform .12s}
+.fab:hover{transform:translateY(-1px)}
+.fab b{font-weight:600}
+.fab .spark{margin-right:6px;opacity:.85}
+.fabpanel{position:fixed;right:20px;bottom:20px;z-index:28;width:352px;max-width:calc(100vw - 28px);height:460px;max-height:calc(100vh - 92px);background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh-lg);display:flex;flex-direction:column;overflow:hidden;animation:pop .16s ease-out}
+.fabpanel .hd{padding:11px 15px;border-bottom:1px solid var(--line);font-size:12px;color:var(--sub);display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--head)}
+.fabpanel .hd b{color:var(--ink)}
+.fabpanel .msgs{flex:1;overflow:auto;padding:12px 15px}
+.fabpanel .foot{border-top:1px solid var(--line);padding:9px 11px}
+.msg{margin:9px 0;max-width:92%;font-size:13px;line-height:1.6}
+.me{margin-left:auto;background:var(--ink);color:#fff;border-radius:12px 12px 3px 12px;padding:6px 12px;width:fit-content}
+.bot{background:var(--line-soft);border-radius:12px 12px 12px 3px;padding:8px 12px;width:fit-content}
+.bot .num{border-bottom-color:var(--link);color:var(--link)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px}
+.inrow{display:flex;gap:8px;align-items:flex-end}
+textarea{flex:1;font:inherit;border:1px solid var(--line);background:var(--head);border-radius:9px;padding:7px 11px;resize:none}
+textarea:hover{border-color:var(--btn-line)}
+.sk{background:linear-gradient(90deg,#ECEBE8 25%,#F4F3F0 50%,#ECEBE8 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;height:13px;border-radius:7px;margin:11px 0}
+@keyframes shimmer{to{background-position:-200% 0}}
+
+/* ===== Agent 模式 ===== */
+.agwrap{display:flex;flex-direction:column;max-width:680px;margin:0 auto;min-height:calc(100vh - 160px)}
+.agwrap .hello{text-align:center;margin:9vh 0 20px}
+.agwrap .hello h2{font-size:23px;margin:0 0 8px;letter-spacing:.01em}
+.agwrap .hello .muted{max-width:460px;margin:0 auto}
+.agmsgs{flex:1;overflow:auto;padding:4px 2px}
+.aginput{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:12px 13px;box-shadow:var(--sh-md);position:sticky;bottom:18px}
+
+/* ===== 周报分段 ===== */
+.seg{border-top:1px solid var(--line-soft);padding:10px 0}
+.seg:first-of-type{border-top:none}
+.seg>button{display:flex;width:100%;justify-content:space-between;text-align:left;gap:10px;align-items:baseline}
+.seg>button:hover h3{color:var(--link)}
+.seg h3{font-size:13.5px;margin:0;transition:color .12s}
+.seg .seg-static h3{font-size:13.5px;margin:0 0 4px}
+
+/* ===== 侧栏 / 弹窗 / 轻提示 ===== */
+.sheet{position:fixed;top:0;right:0;bottom:0;width:384px;max-width:92vw;background:var(--paper);border-left:1px solid var(--line);box-shadow:var(--sh-lg);padding:20px;z-index:40;overflow:auto;animation:slidein .18s ease-out}
+@keyframes slidein{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+.sheet dl{display:grid;grid-template-columns:76px 1fr;gap:8px 10px;font-size:13px}
+.sheet dt{color:var(--sub)}
+.sheet dd{margin:0}
+.sheet .bignum{font-size:24px;font-weight:650;margin:10px 0 0;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.mask{position:fixed;inset:0;background:rgba(26,27,31,.4);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadein .14s ease-out}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.modal{background:var(--paper);border-radius:14px;padding:20px;width:440px;max-width:100%;box-shadow:var(--sh-lg);animation:pop .16s ease-out}
+@keyframes pop{from{transform:scale(.97);opacity:0}to{transform:none;opacity:1}}
+.modal h2{margin:0 0 10px;font-size:15.5px}
+.change{background:var(--head);border:1px solid var(--line-soft);border-radius:9px;padding:10px 14px;font-size:13px;margin:10px 0;font-variant-numeric:tabular-nums}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#2E2F33;color:#fff;padding:5px 16px;border-radius:999px;z-index:60;font-size:13px;box-shadow:var(--sh-md)}
+.anno{display:none;font-size:11px;color:#fff;background:var(--faint);border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:1px}
+body.show-anno .anno{display:inline-block}
+
+/* ===== 窄屏（375 宽不横向滚动） ===== */
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr}
+  nav{display:flex;gap:3px;padding:7px 10px;overflow-x:auto;border-right:none;border-bottom:1px solid var(--line);align-items:center}
+  nav .brand,nav .grp{display:none}
+  .mode{margin:0 6px 0 0;flex:0 0 auto;width:150px}
+  .mode button{padding:3.5px 0}
+  nav .navitem{width:auto;margin:0;white-space:nowrap;padding:5.5px 10px}
+  nav .navitem .nico{display:none}
+  main{padding:16px 14px 70px}
+  .card{overflow-x:auto}
+  .action{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .topbar{padding:8px 12px}
+  .topbar .right{padding-right:96px}
+  .topbar .statline{display:none}
+  .agwrap .hello{margin-top:5vh}
+}
+</style>
+</head>
+<body>
+<div id="console" aria-label="演示控制（不属于产品画面）"></div>
+<div class="topbar" id="topbar"></div>
+<div class="layout">
+  <nav id="nav" aria-label="导航"></nav>
+  <main id="main"></main>
+</div>
+<div id="fab"></div>
+<div id="overlay"></div>
+
+<script>
+// 数据全部取自 scenario-data V0.4；剧本没有的用"—"，问题编号放在旁注里。
+// 交互与低保真 V0.6.2 完全一致，只升级视觉。
+const ROLES={boss:'老板',site:'独立站组',amazon:'Amazon 组',ads:'投放组'};
+const GROUP={site:'独立站组',amazon:'Amazon 组',ads:'投放组'};
+const A=t=>`<span class="anno">${t}</span>`;
+
+const ICONS={
+  daily:'<path d="M1.5 9h3l2-5.5 3 9.5 2-4h3"/>',
+  weekly:'<rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/>',
+  action:'<circle cx="8" cy="8" r="6.2"/><circle cx="8" cy="8" r="2.4"/>',
+  ledger:'<path d="M3 3.5h10M3 8h10M3 12.5h6.5"/>',
+  lib:'<path d="M4 2h8v12l-4-2.6L4 14z"/>',
+  sources:'<ellipse cx="8" cy="3.6" rx="5.4" ry="2"/><path d="M2.6 3.6v8.8c0 1.1 2.4 2 5.4 2s5.4-.9 5.4-2V3.6"/><path d="M2.6 8c0 1.1 2.4 2 5.4 2s5.4-.9 5.4-2"/>',
+  set:'<circle cx="8" cy="8" r="2.2"/><path d="M8 1.6v2.2M8 12.2v2.2M1.6 8h2.2M12.2 8h2.2M3.5 3.5l1.6 1.6M10.9 10.9l1.6 1.6M12.5 3.5l-1.6 1.6M5.1 10.9l-1.6 1.6"/>',
+};
+const IC=k=>`<svg class="nico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
+
+const SRC={
+  week:{v:'$60,680',n:'上周销售额（D-8 到 D-2）',p:'Shopify + Amazon 订单',t:'美国时间上周日到周六',a:'预期 $61,350，比预期 −$670（竞品 −$320 AI 推断、素材疲劳 −$250、正常波动 −$100）；前一周 $61,920（环比 −2.0%）；去年同一周 $52,340（+15.9%）',l:'实测',m:'可能变动（广告类回补）'},
+  actual:{v:'$8,080',n:'D-1 实际销售额',p:'Shopify + Amazon 订单',t:'美国时间 D-1',a:'Shopify $6,030 + Amazon $2,050',l:'实测',m:'已成熟'},
+  expect:{v:'$9,500',n:'D-1 预期中值',p:'历史订单',t:'去年同星期几（往前 364 天）',a:'$8,050 × 1.18；正常范围 $9,100–9,900（±4.2%）',l:'估算',m:'已成熟'},
+  total:{v:'−$1,420',n:'比预期少的销售额',p:'Shopify + Amazon',t:'美国时间 D-1',a:'Shopify −$1,170，Amazon −$250',l:'实测',m:'已成熟'},
+  stockout:{v:'−$600',n:'帐篷断货少卖',p:'Shopify 库存快照、订单',t:'断货 D-1；基线 D-9 到 D-3',a:'1 天 × 断货前干净日均 $600（2.08 顶/天）',l:'估算',m:'已成熟'},
+  fatigue:{v:'−$300',n:'月亮椅素材疲劳少卖',p:'Meta 广告 + 订单',t:'美国时间 D-1',a:'展示 40,000 × (1.80% − 1.35%) × 1.4% × $120',l:'估算',m:'可能变动'},
+  cpc:{v:'−$150',n:'双人帐篷 CPC 上涨少卖',p:'Google 广告 + 订单',t:'美国时间 D-1',a:'点击 333 → 276，少 57 × 2.2% × $120',l:'估算',m:'可能变动'},
+  cooler:{v:'−$120',n:'保温箱竞品降价少卖',p:'订单 + 对标页面抓取',t:'美国时间 D-1',a:'访客 160 × (2.0% − 1.5%) × $149',l:'AI 推断 · 中',m:'已成熟'},
+  other:{v:'−$250',n:'Amazon 其他（未被规则解释）',p:'Amazon 销售与流量',t:'美国时间 D-1',a:'总变化 − 已认领各项',l:'未解释',m:'已成熟'},
+  margin:{v:'约 −$960',n:'少赚（商品毛利）',p:'订单 + 成本表',t:'美国时间 D-1',a:'−$400 −$215 −$165 −$100 −$80；不含平台费用和广告',l:'估算',m:'已成熟'},
+  reorder:{v:'294 个 / $11,760',n:'0℃ 睡袋建议补货量',p:'Shopify 库存、订单',t:'近 30 天',a:'安全库存 1.65 × 3.5 × √30 ≈ 32；45 × 9.5 + 32 − 171 = 288.5 → 箱规 6 取整 294；超过 $10,000 需二次确认',l:'估算',m:'已成熟'},
+  restock:{v:'104 顶 / $9,984',n:'四人帐篷建议补货量',p:'Shopify 库存、订单',t:'日均取断货前',a:'安全库存 1.65 × 1.2 × √21 ≈ 9；45 × 2.1 + 9 − 0 = 103.5 → 箱规 4 取整 104；× $96',l:'估算',m:'已成熟'},
+  coolEffect:{v:'+$30–75 / 天',n:'保温箱调价预计效果（按推荐价 $135）',p:'程序估算',t:'执行后',a:'假设转化率回到 1.8%–2.0%；本店没有调价历史，弹性用行业经验值',l:'估算 · 低置信',m:'—'},
+  inv_tent:{v:'可售 0',n:'TENT-4P-01 自有仓库存',p:'Shopify 库存快照',t:'D-1',a:'D-2 晚上卖完，D-1 全天可售 0；在途 0。FBA 仓 96 顶（约 37 天），Amazon 不受影响',l:'实测',m:'已成熟'},
+  base_tent:{v:'$600/天',n:'断货前干净日均',p:'Shopify 订单',t:'D-9 到 D-3',a:'日均 2.08 顶，期间没有促销',l:'估算',m:'已成熟'},
+  ad301:{v:'$285',n:'META-AS-301 昨日花费',p:'Meta 广告',t:'D-1',a:'推 TENT-4P-01；订单口径销售额 $0，ROAS = 0',l:'实测',m:'可能变动'},
+  fatmark:{v:'fatigue',n:'Meta 官方疲劳标记',p:'Meta 广告',t:'D-1',a:'META-AS-302 单素材「露营全家福视频 v2」；单次结果成本是历史的 2.1 倍',l:'实测',m:'可能变动'},
+  freqctr:{v:'3.6 / −25%',n:'7 天频次与点击率变化',p:'Meta 广告',t:'基线为上线后第 4–10 天',a:'频次 3.6；点击率 1.80% → 1.35%',l:'实测',m:'可能变动'},
+  cs31:{v:'$280/天',n:'历史案例 CS-0031',p:'经验库',t:'D-27',a:'暂停疲劳素材「帐篷开箱视频 v1」，预计 $200–350/天，实际 $280/天，判定有效',l:'已复盘',m:'—'},
+  memo:{v:'已确认',n:'店铺备忘录',p:'老板手写',t:'—',a:'"每年 Prime 大促前一周不调整 Google 出价"；另一条：KIT-01 明年 1 月换新款，停止补货',l:'备忘录',m:'—'},
+  cs19:{v:'$20/天',n:'历史案例 CS-0019',p:'经验库',t:'D-92',a:'Google 出价下调 10%，预计 $80–150/天，实际 $20/天，判定无效（CPC 回落后点击没恢复）',l:'已复盘',m:'—'},
+  frosttrail:{v:'$129',n:'FrostTrail 保温箱价格',p:'对标页面每日定时抓取',t:'D-2 晚',a:'$149 → $129（−13%）；页面没有促销标识和结束日期，判断为长期调价',l:'实测（抓取）',m:'已成熟'},
+  cvr_cool:{v:'1.5%',n:'COOL-01 独立站转化率',p:'Shopify',t:'D-1',a:'2.0% → 1.5%（−25%）；访客 160 → 158，基本持平',l:'实测',m:'已成熟'},
+  exclC:{v:'已排除',n:'保温箱的排除项',p:'Shopify、评论',t:'近 14 天',a:'可售 85 个（约 26 天）不缺货；评分 4.5 星无集中差评；商品页 14 天没改动；配送时效没变',l:'实测',m:'已成熟'},
+  amz_cvr:{v:'10.9%',n:'Amazon 帐篷转化率',p:'Amazon 销售与流量',t:'D-1',a:'12.4% → 10.9%；访客约 420 → 416（−1%），持平',l:'实测',m:'已成熟'},
+  trailpeak:{v:'$245',n:'TrailPeak（B0DABC5678）价格',p:'竞品价格数据',t:'D-3',a:'$289 → $245（−15%），标注"促销中"',l:'实测',m:'已成熟'},
+  exclA:{v:'已排除',n:'Amazon 帐篷的排除项',p:'Amazon',t:'近 14 天',a:'评分 4.5 星无集中差评；推荐报价占比 98%（平时 97–99%）；送达承诺 2 天没变',l:'实测',m:'已成熟'},
+};
+
+const CAUSES=[
+  {id:'stockout',name:'帐篷断货',ch:'Shopify',amt:600,mg:400,lvl:'est',groups:['site','ads'],exp:'历史 3/4 有效',strat:'s1',
+   judge:'自有仓 D-2 晚上卖完，D-1 全天断货；损失按断货前日均 $600 计。帐篷页流量正常，排除其他因素。',
+   cits:[['Shopify 库存快照','inv_tent'],['断货前日均','base_tent'],['断货期间广告仍在花钱','ad301']],
+   qq:[['少卖 $600 怎么算的？','1 天 × 断货前干净日均 $600（D-9 到 D-3 日均 2.08 顶，剔除促销日）。这是程序按规则算的，不是 AI 估的。'],['Amazon 也断货了吗？','没有。FBA 仓有 96 顶，日均 2.6 顶，可售约 37 天，不受影响。']]},
+  {id:'fatigue',name:'Meta 广告看腻了',ch:'Shopify',amt:300,mg:215,lvl:'est',groups:['ads'],exp:'历史 2/2 有效',strat:'s2',
+   judge:'Meta 官方标记素材疲劳，频次 3.6、点击率比自身基线下降 25%，判定是同一批人反复看同一条素材。',
+   cits:[['Meta 疲劳标记','fatmark'],['频次和点击率','freqctr'],['历史案例 CS-0031','cs31']],
+   qq:[['上次素材疲劳怎么处理的？','CS-0031：暂停「帐篷开箱视频 v1」，预计 $200–350/天，实际挽回 $280/天，有效。这类做法历史 2 次中 2 次有效。']]},
+  {id:'other',name:'其他（Amazon）',ch:'Amazon',amt:250,mg:165,lvl:'unk',groups:['amazon'],exp:'',strat:'s4',
+   judge:'规则没覆盖到的部分，需要 AI 调查。',
+   judge2:'TrailPeak 促销降价 15%，我们流量持平、转化率从 12.4% 降到 10.9%，评分和推荐报价都正常 → AI 推断：竞品降价抢走转化。可信度中。',
+   cits:[['转化率下降','amz_cvr'],['TrailPeak 降价','trailpeak'],['排除项','exclA']],
+   traj:['查 Amazon 销售额：实际 $2,050，预期 $2,300，少 $250','拆成流量和转化：访客 420 → 416 持平；转化率 12.4% → 10.9%','查竞品价格：TrailPeak D-3 从 $289 降到 $245（−15%），标注"促销中"','查评分 4.5 星、推荐报价 98%、送达 2 天 → 排除这些因素'],
+   qq:[['为什么说是竞品降价？','流量持平、转化率下降，评分和推荐报价又正常，时间上正好对上 TrailPeak D-3 降价 15%。这是推断，标了可信度中。']]},
+  {id:'cpc',name:'Google 广告变贵',ch:'Shopify',amt:150,mg:100,lvl:'est',groups:['ads'],exp:'线索 0/1',strat:'s3',
+   judge:'CPC 从 $1.20 涨到 $1.45，推断是对手在 D+4 大促前抬价；店铺备忘录约定大促前一周不调出价。',
+   cits:[['CPC 变化','cpc'],['店铺备忘录','memo'],['历史案例 CS-0019','cs19']],
+   qq:[['为什么推荐不动？','两个依据：备忘录写着"大促前一周不调 Google 出价"；上次类似情况（CS-0019）降价后 CPC 回落但点击没恢复，判定无效。']]},
+  {id:'cooler',name:'保温箱竞品降价',ch:'Shopify',amt:120,mg:80,lvl:'ai',groups:['site'],exp:'',strat:'s5',
+   judge:'对标 FrostTrail 长期降价 13%（无促销标识），我们转化率同步下降 25%，缺货、评分、页面改动都已排除 → AI 推断：价格竞争力下降。可信度中。',
+   cits:[['FrostTrail 价格','frosttrail'],['我们的转化率','cvr_cool'],['排除项','exclC']],
+   qq:[['为什么降到 $135 而不是 $129？','对方是长期调价，不必追到底：$135 保留一点品牌溢价，调价后毛利率 61%，仍在 50% 底线之上。'],['预计效果怎么算的？','假设转化率回到 1.8%–2.0%：日销售额多 $30–75。本店没有调价历史，弹性用行业经验值，所以标低置信。']]},
+];
+
+const STRATS={
+  s1:{cause:'stockout',title:'补货 + 暂停帐篷广告',who:'独立站组、投放组',wrong:'帐篷准备停产（备忘录里没有记录）',
+    eff:'停广告每天省 $285；补货到货后恢复 $450–600/天 · 历史 3/4 有效',
+    alts:[['C','落地页换到替代款'],['D','不补']],
+    acts:[{id:'s1b',label:'暂停 META-AS-301',tier:'backend',group:'ads',plat:'Meta 广告管理',from:'在投',to:'已暂停',review:'执行后 7 天'},
+          {id:'s1a',label:'补货采购计划',tier:'task',group:'site',plat:'采购计划草稿',from:'TENT-4P-01',to:'',review:'到货后 7 天'}]},
+  s2:{cause:'fatigue',title:'暂停月亮椅广告组 + 新素材需求',who:'投放组',wrong:'换素材后点击率仍不回升',
+    eff:'每天挽回 $200–350 · 历史 2/2 有效',
+    alts:[['B','扩大受众'],['D','不动']],
+    guards:()=>[[true,'广告组已稳定，不在学习期'],[true,'上次修改 D-12，间隔 ≥ 7 天']],
+    acts:[{id:'s2a',label:'暂停 META-AS-302',tier:'backend',group:'ads',plat:'Meta 广告管理',from:'在投',to:'已暂停',review:'执行后 7 天'},
+          {id:'s2b',label:'月亮椅新素材需求',tier:'task',group:'ads',plat:'素材需求',from:'「露营全家福视频 v2」',to:'新素材',review:'过学习期后 7 天'}]},
+  s3:{cause:'cpc',title:'Google 出价先不动',noop:true,who:'投放组',wrong:'大促后 CPC 仍不回落',
+    eff:'备忘录：大促前一周不调出价',
+    alts:[['A','出价 $1.50 → $1.35 · 与备忘录冲突',{eff:'净效果 −$33 到 +$40/天，可能为负 · 线索（1 次，无效）',tags:['与备忘录冲突']}],['B','预算挪到稳定的组'],['C','收窄匹配、加否定词']],
+    guards:()=>[[true,'不动，无需检查']],
+    altActs:{A:[{id:'s3a',label:'Google 出价调整',tier:'backend',group:'ads',plat:'Google Ads 后台',from:'$1.50',to:'$1.35',review:'执行后 7 天'}]},acts:[]},
+  s4:{cause:'other',title:'Amazon 帐篷发限时优惠券',who:'Amazon 组',wrong:'对方促销很快结束',tags:['AI 推断 · 中'],
+    eff:'面额 $30：日销售额 +$120–250（低置信）· 用券毛利率 63%',
+    alts:[['B','降基础价'],['C','改 listing 强调差异'],['D','不动，等促销结束']],
+    guards:()=>[[true,'促销深度 $30/$289 ≈ 10.4%，上限 50%'],[true,'用券毛利率 63%（$163/$259），底线 50%']],
+    acts:[{id:'s4a',label:'限时优惠券',tier:'backend',group:'amazon',plat:'Amazon 卖家后台 · 优惠券（没有创建接口）',from:'无',to:'限时优惠券 $30',review:'执行后 7 天'}]},
+  s5:{cause:'cooler',title:'保温箱降基础价',who:'独立站组',wrong:'对方很快把价格调回去（复盘时看对方价格）',tags:['AI 推断 · 中'],
+    eff:'按推荐价 $135：日销售额 +$30–75（低置信）',
+    alts:[['A','限时折扣码'],['C','改详情页强调差异'],['D','不动']],
+    acts:[{id:'s5a',label:'Shopify 改价',tier:'oneclick',group:'site',plat:'Shopify · COOL-01',from:'$149',to:'',review:'执行后 7 天'}]},
+};
+const ORDER=['s1','s2','s4','s3','s5'];
+const WEEKLY=['s1','s2','s4'];
+
+const LIB=[
+  ['CS-0031','D-27','素材疲劳','暂停素材「帐篷开箱视频 v1」','$200–350/天','$280/天','有效'],
+  ['CS-0024','D-85','断货','补货 LAMP-01，暂停对应广告','$150–250/天','$210/天','有效'],
+  ['CS-0019','D-92','广告成本突涨','Google 出价下调 10%','$80–150/天','$20/天','无效'],
+  ['CS-0015','D-96','素材疲劳','暂停素材「月亮椅场景图 v1」','$150–300/天','$190/天','有效'],
+  ['CS-0011','D-150','断货','补货 TENT-2P-02，暂停对应广告','$300–450/天','$380/天','有效'],
+  ['CS-0009','D-180','断货','补货 COOL-01','$200–300/天','$240/天','有效'],
+  ['CS-0007','D-200','断货','补货 STOVE-01','$100–180/天','$30/天','无效'],
+];
+
+const AGENT_QA={
+  A02:{q:'流量没变，销量为什么掉了？',a:'少的 $1,420 拆成 5 项：帐篷断货 −$600、Meta 素材疲劳 −$300、其他（Amazon）−$250、Google CPC 上涨 −$150、保温箱竞品降价 −$120，加起来正好 −$1,420。帐篷页访客 1,180（平时 1,210）基本持平，问题出在断货。<button class="num" data-view-go="action">去行动页看归因</button>'},
+  A21:{q:'Meta 和订单数为什么对不上？',a:'近 7 天 Meta 后台 186 单，订单里来自 Meta 121 单。Meta 按自己的归因窗口统计，我们以订单为准。'},
+  A23:{q:'新客少了还是老客少了？',a:'新客比预期少 $1,140，老客少 $280，约 80% 来自新客。'},
+  EXE:{q:'直接帮我把保温箱降到 $135',a:'我不能直接执行。我把这个提议暂存到了「行动 · 保温箱竞品降价」的方案里，由老板在页面上采纳、独立站组点执行后才会生效。<button class="num" data-view-go="action">去行动页</button>'},
+};
+
+let S;
+function init(){
+  S={view:'daily',mode:'work',role:'boss',anno:false,
+    tg:{loading:false,missing:false,failReview:false,checkFail:false,timeout:false},
+    seg:{},alertFb:null,alertRead:false,
+    invStep:0,investigated:false,sel:'stockout',fabOpen:false,more:{},causeFb:{},
+    params:{qty:104,price:135},
+    st:{},achat:[],agchat:[],ledger:[],libInvalid:{},libTab:'in',sheet:null,modal:null,toast:'',sup:null};
+  for(const id in STRATS) S.st[id]={status:'pending',choice:null,reason:'',acts:{}};
+}
+init();
+const $=s=>document.querySelector(s);
+const now=()=>{const d=new Date();return 'D0 '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+const boss=()=>S.role==='boss';
+const sees=groups=>boss()||groups.includes(S.role);
+const esc=t=>t.replace(/[<&]/g,c=>c==='<'?'&lt;':'&amp;');
+function toast(t){S.toast=t;overlay();setTimeout(()=>{S.toast='';overlay();},1300)}
+const pendCount=()=>Object.keys(STRATS).filter(id=>status(id)==='pending'&&(id!=='s4'||S.investigated)).length;
+
+// 动态参数
+const qtyCost=()=>S.params.qty*96;
+const cutPct=()=>((149-S.params.price)/149*100);
+const marginPct=()=>S.params.price>0?((S.params.price-52)/S.params.price*100):0;
+function guardsOf(id){
+  if(id==='s1')return [[qtyCost()<=10000,`补货 ${S.params.qty} 顶 × $96 = $${qtyCost().toLocaleString()}${qtyCost()<=10000?'，未超过 $10,000':'，超过 $10,000，采纳时需二次确认'}`],[true,'断货期间暂停广告不受学习期限制']];
+  if(id==='s5')return [[cutPct()<=20&&cutPct()>=0,`单次调价 −${cutPct().toFixed(1)}%，上限 20%`],[marginPct()>=50,`调价后毛利率 ${marginPct().toFixed(0)}%（原 65%），底线 50%`]];
+  return STRATS[id].guards?STRATS[id].guards():[];
+}
+const guardsFail=id=>guardsOf(id).some(g=>!g[0]&&id==='s5'); // 补货超限走二次确认，不拦
+
+// ===== 演示控制 =====
+let demoOpen=false;
+function consoleBar(){
+  const sw=[['loading','页面正在加载'],['missing','Meta 广告数据没拿到'],['failReview','保温箱的建议没通过 AI 审核'],['checkFail','执行时发现平台价格已被别人改过'],['timeout','执行后读不到平台的结果']];
+  $('#console').innerHTML=`<button class="demo-btn" id="demoBtn" aria-expanded="${demoOpen}">演示控制 ${demoOpen?'▴':'▾'}</button>`+(demoOpen?`<div class="demo-panel">
+  <b>演示控制</b><div class="note" style="margin-top:2px">给演示者用，不是产品的一部分</div>
+  <h4>以谁的身份看</h4><select id="role">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${S.role===k?'selected':''}>${v}</option>`).join('')}</select>
+  <h4>跳到演示的第几幕</h4><button data-act="1">一 周报</button> <button data-act="2">二 监测与行动</button> <button data-act="3">三 复盘结果</button>
+  <h4>模拟异常情况（打开后看对应画面）</h4>${sw.map(([k,v])=>`<label><input type="checkbox" data-tg="${k}" ${S.tg[k]?'checked':''}>${v}</label>`).join('')}
+  <h4>其他</h4><label><input type="checkbox" id="anno" ${S.anno?'checked':''}>标出待定的地方（Q 编号）</label>
+  <button id="reset" style="margin-top:6px">重置到初始状态</button>
+  <div class="note">执行、回读都是模拟的，不连真实平台。</div></div>`:'');
+  $('#demoBtn').onclick=()=>{demoOpen=!demoOpen;consoleBar()};
+  if(!demoOpen)return;
+  $('#role').onchange=e=>{S.role=e.target.value;render()};
+  document.querySelectorAll('[data-tg]').forEach(el=>el.onchange=()=>{S.tg[el.dataset.tg]=el.checked;render()});
+  $('#anno').onchange=e=>{S.anno=e.target.checked;render()};
+  $('#reset').onclick=()=>{init();render();toast('已重置')};
+  document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{
+    const a=b.dataset.act;
+    S.mode='work';
+    if(a==='1'){S.view='weekly'}
+    if(a==='2'){S.view='daily'}
+    if(a==='3'){S.view='weekly';S.seg.w4=true}
+    render();
+  });
+}
+const NAVI=[['daily','每日监测'],['weekly','周报'],['action','归因与方案'],['ledger','执行记录'],['lib','经验库'],['sources','数据源'],['set','设置']];
+function nav(){
+  const sw=`<div class="mode" role="tablist"><button data-mode="work" aria-pressed="${S.mode==='work'}">工作台</button><button data-mode="agent" aria-pressed="${S.mode==='agent'}">Agent</button></div>`;
+  $('#nav').innerHTML=`<div class="brand"><span class="logo">诊</span>经营诊断助手</div>`+sw+(S.mode==='work'?NAVI.map(([k,v])=>`<button class="navitem" data-view="${k}" ${S.view===k?'aria-current="page"':''}>${IC(k)}<span>${v}${k==='daily'&&!S.alertRead?'<span class="dot" title="有未读异常"></span>':''}</span></button>`).join(''):'<div class="muted" style="margin:6px 10px">问任何经营问题；要执行会引导回工作台。</div>');
+}
+function topbar(){
+  const names={daily:'每日监测',weekly:'周报',action:'归因与方案',ledger:'执行记录',lib:'经验库',sources:'数据源',set:'设置'};
+  $('#topbar').innerHTML=`<b>营地户外</b><span class="crumb2">· ${S.mode==='agent'?'Agent 对话':names[S.view]}</span><span class="statline">昨日销售额低于正常范围 −14.9%</span>
+  <span class="right"><span>待决策 <b>${pendCount()}</b></span><span>·</span><span>角色：${ROLES[S.role]}</span></span>`;
+}
+
+// ===== 策略状态（PRD 8.1） =====
+function acts(id){const s=STRATS[id],st=S.st[id];if(!st.choice)return s.acts;return (s.altActs&&s.altActs[st.choice])||[];}
+function actTo(id,a){if(a.id==='s1a')return `${S.params.qty} 顶 · $${qtyCost().toLocaleString()}`;if(a.id==='s5a')return `$${S.params.price}`;return a.to}
+function status(id){
+  const st=S.st[id];
+  if(['pending','rejected','decided'].includes(st.status))return st.status;
+  const a=acts(id).map(x=>st.acts[x.id]||{state:'idle'});
+  if(a.length&&a.every(x=>x.state==='revoked'))return 'revoked';
+  if(a.some(x=>x.state==='timeout'))return 'timeout';
+  if(a.some(x=>x.state==='running'))return 'executing';
+  if(a.length&&a.every(x=>x.state==='done'||x.state==='revoked'))return 'review';
+  return 'adopted';
+}
+const TXT={pending:'待决策',adopted:'已采纳',rejected:'不采纳',decided:'已决策',executing:'执行中',timeout:'回读超时',review:'待复盘',revoked:'已撤回'};
+
+// ===== 图表（上色：正常范围带 + 主色实际线；瀑布区分程序估算与 AI 推断） =====
+function svgTrend(){
+  const days=[['D-8',9520,9005,9795],['D-7',8210,8000,8700],['D-6',8480,8045,8755],['D-5',8370,8095,8805],['D-4',8420,8145,8855],['D-3',8830,8670,9430],['D-2',8850,8810,9590],['D-1',8080,9100,9900]];
+  const W=560,H=170,PL=16,PR=70,PT=16,PB=24,ymin=7800,ymax=10000;
+  const X=i=>PL+(W-PL-PR)*i/(days.length-1);
+  const Y=v=>PT+(H-PT-PB)*(1-(v-ymin)/(ymax-ymin));
+  const hi=days.map((d,i)=>`${X(i)},${Y(d[3])}`).join(' ');
+  const lo=days.map((d,i)=>`${X(i)},${Y(d[2])}`).reverse().join(' ');
+  let g=`<polygon points="${hi} ${lo}" fill="#E9EEFB"/>`;
+  g+=`<text x="${X(days.length-1)+10}" y="${Y(9500)}" font-size="10" fill="#8CA0D0">正常范围</text>`;
+  g+=`<polyline points="${days.map((d,i)=>`${X(i)},${Y(d[1])}`).join(' ')}" fill="none" stroke="#2F5BD3" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const last=days.length-1;
+  days.forEach((d,i)=>{
+    g+=`<circle cx="${X(i)}" cy="${Y(d[1])}" r="${i===last?4.5:3}" fill="${i===last?'#B23A0E':'#fff'}" stroke="${i===last?'#B23A0E':'#2F5BD3'}" stroke-width="1.6"/>`;
+    if(i>=last-2||i===0)g+=`<text x="${X(i)}" y="${Y(d[1])-9}" text-anchor="middle" font-size="10" fill="${i===last?'#B23A0E':'#6A6D74'}" ${i===last?'font-weight="600"':''}>$${d[1].toLocaleString()}</text>`;
+    g+=`<text x="${X(i)}" y="${H-4}" text-anchor="middle" font-size="9" fill="#9C9A93">${d[0]}</text>`;
+  });
+  g+=`<text x="${X(last)+10}" y="${Y(8080)+4}" font-size="11" fill="#B23A0E" font-weight="600">低于下限</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="近 8 天日销售额和正常范围">${g}</svg>`;
+}
+function svgWaterfall(){
+  const items=[['预期',9500,'base'],['断货',-600,'est'],['素材疲劳',-300,'est'],['其他',-250,'unk'],['CPC 上涨',-150,'est'],['保温箱',-120,'ai'],['实际',8080,'tot']];
+  const W=560,H=190,PL=10,PR=10,PT=18,PB=40,ymin=7800,ymax=9700;
+  const Y=v=>PT+(H-PT-PB)*(1-(v-ymin)/(ymax-ymin));
+  const n=items.length,step=(W-PL-PR)/n,bw=step*0.52;
+  let run=9500,g=`<defs><pattern id="hatch" width="5" height="5" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="5" height="5" fill="#F2D9CC"/><line x1="0" y1="0" x2="0" y2="5" stroke="#D99E7E" stroke-width="1.6"/></pattern></defs>`;
+  items.forEach((it,i)=>{
+    const x=PL+step*i+(step-bw)/2;
+    let y0,y1,fill='url(#hatch)',stroke='#C98F6E',dash='',ai=false;
+    if(it[2]==='base'){y0=Y(9500);y1=Y(ymin);fill='#1A1B1F';stroke='none'}
+    else if(it[2]==='tot'){y0=Y(8080);y1=Y(ymin);fill='#1A1B1F';stroke='none'}
+    else{const to=run+it[1];y0=Y(run);y1=Y(to);run=to;
+      if(it[2]!=='est'){fill='#FCF4EF';stroke='#C2724C';dash='stroke-dasharray="4 3"';ai=true}}
+    g+=`<rect x="${x}" y="${Math.min(y0,y1)}" width="${bw}" height="${Math.abs(y1-y0)}" rx="2.5" fill="${fill}" ${stroke==='none'?'':`stroke="${stroke}"`} ${dash}/>`;
+    const lab=it[2]==='base'||it[2]==='tot'?`$${it[1].toLocaleString()}`:`−$${-it[1]}`;
+    g+=`<text x="${x+bw/2}" y="${Math.min(y0,y1)-5}" text-anchor="middle" font-size="11" fill="${it[2]==='base'||it[2]==='tot'?'#1A1B1F':'#9A4A22'}" ${it[2]==='base'||it[2]==='tot'?'font-weight="600"':''}>${lab}</text>`;
+    g+=`<text x="${x+bw/2}" y="${H-24}" text-anchor="middle" font-size="10" fill="#6A6D74">${it[0]}</text>`;
+    if(ai)g+=`<text x="${x+bw/2}" y="${H-10}" text-anchor="middle" font-size="9" fill="#C2724C">${it[2]==='unk'?'待查明':'AI 推断'}</text>`;
+    if(i<n-1&&it[2]!=='tot'){const lv=it[2]==='base'?9500:run;g+=`<line x1="${x+bw}" y1="${Y(lv)}" x2="${x+step}" y2="${Y(lv)}" stroke="#D6D4CE"/>`}
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="从预期到实际的瀑布拆解">${g}</svg>`;
+}
+
+// ===== 每日监测 =====
+function dailyView(){
+  const fb=S.alertFb;
+  const rules=[
+    ['断货','四人帐篷 · 独立站','命中','stockout','−$600'],
+    ['素材疲劳','月亮椅 META-AS-302','命中','fatigue','−$300'],
+    ['广告成本突涨','双人帐篷 GOOG-AS-501','命中','cpc','−$150'],
+    ['竞品降价','保温箱 · 独立站','命中 <span class="chip ai">AI 推断</span>','cooler','−$120'],
+    ['规则未覆盖','Amazon 帐篷','<button class="num" data-sel-go="other">去行动页查</button>','other','−$250'],
+    ['低库存预警','0℃ 睡袋','预警 · 可售 18 天','reorder','建议补 294 个'],
+  ];
+  const miss=S.tg.missing;
+  return `<h1>每日监测</h1><div class="crumb">每天 9:00 检测美国时间前一天 · 当前：D-1</div>
+  <div class="kpis">
+    <div class="kpi"><span class="d">昨日销售额</span><b><button class="num" data-src="actual">$8,080</button></b><span class="d">预期 $9,500</span></div>
+    <div class="kpi"><span class="d">比预期</span><b><button class="num neg" data-src="total">−$1,420</button></b><span class="d">−14.9% · 超出正常范围</span></div>
+    <div class="kpi"><span class="d">少赚（毛利）</span><b><button class="num neg" data-src="margin">约 −$960</button></b><span class="d">商品毛利口径</span></div>
+    <div class="kpi"><span class="d">待决策</span><b>${pendCount()}</b><span class="d"><button class="num" data-view-go="action">去行动页</button></span></div>
+  </div>
+  <div class="card alertcard">
+    <div class="headline">昨天卖了 $8,080，比预期少 $1,420</div>
+    <div class="subline">低于正常范围下限 $9,100 · 最大的原因是帐篷断货 −$600</div>
+    <div class="actions"><button class="btn pri" data-view-go="action">看归因与方案</button><span class="sep"></span>
+    <span class="muted">这条提醒</span><button class="btn sm" aria-pressed="${fb==='值得'}" data-fb="值得">值得</button><button class="btn sm" aria-pressed="${fb==='不值得'}" data-fb="不值得">不值得</button></div>
+  </div>
+  <div class="card"><div class="sect">近 8 天日销售额和正常范围　<span class="soft">D-8 到 D-2 都在范围内，没有报警（含 D-3、D-2 的轻微下滑）</span></div>
+    <div class="chart">${svgTrend()}</div></div>
+  <div class="card"><div class="sect">问题清单检测结果</div>
+    ${miss?'<div class="warnline soft">Meta 数据没拿到，素材疲劳今天没有检测，不用 0 顶替</div>':''}
+    <table><tr><th>检测项</th><th>对象</th><th>结果</th><th class="amt">影响</th></tr>
+    ${rules.filter(r=>!(miss&&r[3]==='fatigue')).map(r=>`<tr><td><b>${r[0]}</b></td><td class="muted" style="font-size:13px">${r[1]}</td><td>${r[2]}</td><td class="amt"><button class="num ${r[4].startsWith('−')?'neg':''}" data-src="${r[3]}">${r[4]}</button></td></tr>`).join('')}</table></div>`;
+}
+
+// ===== 行动：归因与方案 + 右侧 Agent 栏 =====
+function citeRow(c){return `<div style="margin-top:6px"><span class="muted">信源：</span>${c.cits.map((x,i)=>`<button class="cite" data-src="${x[1]}">[${i+1}] ${x[0]}</button>`).join('')}</div>`}
+function planBlock(id){
+  const s=STRATS[id],st=S.st[id],stt=status(id);
+  const failRev=S.tg.failReview&&id==='s5';
+  const chosenAlt=st.choice?s.alts.find(a=>a[0]===st.choice):null;
+  const alt=chosenAlt&&chosenAlt[2]||null;
+  const title=chosenAlt?`改选 ${chosenAlt[0]}：${chosenAlt[1].split(' · ')[0]}`:s.title;
+  const eff=chosenAlt?(alt?alt.eff:'预计效果 —'):s.eff;
+  const tags=((failRev?['未通过审核']:alt?alt.tags:chosenAlt?[]:(s.tags||[]))).map(b=>`<span class="chip ai">${b}</span>`).join('');
+  const open=S.more[id];
+  const canEdit=boss()&&stt==='pending'&&!chosenAlt;
+  let params='';
+  if(id==='s1')params=`<div style="margin-top:5px" class="amtnum">补货数量 ${canEdit?`<input class="param" type="number" min="0" step="1" value="${S.params.qty}" data-param="qty" aria-label="补货数量">`:`<b>${S.params.qty}</b>`} 顶 × 成本 $96 = <b>$${qtyCost().toLocaleString()}</b> <button class="num" data-src="restock">怎么算的</button></div>`;
+  if(id==='s5')params=`<div style="margin-top:5px" class="amtnum">目标价 $149 → ${canEdit?`<input class="param" type="number" min="0" step="1" value="${S.params.price}" data-param="price" aria-label="目标价">`:`<b>$${S.params.price}</b>`}（推荐 $135）· 单件毛利 $97 → <b>$${Math.max(0,S.params.price-52)}</b> · 毛利率 65% → <b>${marginPct().toFixed(0)}%</b>${S.params.price!==135?' <span class="muted">改价后预计效果需重算（演示版不重算）</span>':' · <button class="num" data-src="coolEffect">预计 +$30–75/天</button>'}</div>`;
+  const guards=guardsOf(id);
+  return `<div class="plan" id="plan-${id}">
+  ${failRev?'<div class="warnline">未通过审核，仅供参考 · 一键执行已降级为去后台修改</div>':''}
+  <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><span class="pt">My Plan：${title}</span><span class="chip st-${stt}">${TXT[stt]}</span></div>
+  <div class="subline">${eff}</div>
+  <div>${tags}<span class="muted">交给${s.who}</span></div>
+  ${params}
+  <div class="guards">${guards.map(g=>`<span class="${g[0]?'g-ok':'g-bad'}"><span class="gm">${g[0]?'✓':'✗'}</span> ${g[1]}</span>`).join('<br>')}</div>
+  ${actionArea(id,stt,failRev)}
+  <button class="btn ghost sm" data-more="${id}" aria-expanded="${!!open}">${open?'收起':'修改方案 / 看备选'}</button>
+  ${open?`<div style="margin-top:6px;font-size:13px">
+    <div class="muted">什么情况是错的：${s.wrong}</div>
+    <div style="margin-top:4px">${s.alts.map(([k,t])=>`<div style="padding:2px 0">${boss()&&stt==='pending'?`<button class="btn sm" data-alt="${id}|${k}">选 ${k}</button> `:`${k} `}${t}</div>`).join('')}${st.choice&&stt==='pending'?`<div style="padding:2px 0"><button class="btn sm" data-alt="${id}|">改回推荐</button></div>`:''}</div>
+  </div>`:''}
+  </div>`;
+}
+function actionArea(id,stt,failRev){
+  const s=STRATS[id],st=S.st[id];
+  const noop=(s.noop&&!st.choice)||st.choice==='D';
+  if(stt==='pending'){
+    if(!boss())return `<div class="status">等待老板决策</div>`;
+    const fail=guardsFail(id);
+    return `<div class="actions"><button class="btn pri" ${fail?'disabled title="护栏不通过，不能采纳"':''} data-${noop?'decide':'adopt'}="${id}">${noop?'确认不动':'采纳'}</button>${fail?'<span class="muted" style="color:var(--warn)">护栏不通过，改回合规的值才能采纳</span>':''}<span class="sep"></span><button class="btn" data-reject="${id}">不采纳</button></div>`;
+  }
+  if(stt==='rejected')return `<div class="status">不采纳 · ${st.reason}</div>`;
+  if(stt==='decided')return `<div class="status">已决策：不动</div>`;
+  const list=acts(id);
+  if(!list.length)return `<div class="status">已采纳 · 该选项未做演示</div>`;
+  return list.map(a=>actRow(id,a,failRev)).join('');
+}
+function tierOf(a,failRev){return a.tier==='oneclick'&&failRev?'backend':a.tier}
+function actRow(id,a,failRev){
+  const as=S.st[id].acts[a.id]||{state:'idle'};
+  const mine=S.role===a.group,tier=tierOf(a,failRev);
+  const btn={oneclick:'执行',backend:'去后台修改',task:'生成任务'}[tier];
+  let line;
+  if(as.state==='idle') line=mine?`<button class="btn pri" data-go="${id}|${a.id}">${btn}</button> ${as.failed?'<span style="color:var(--warn)">平台当前值已变，未执行</span>':`<span class="muted">${a.label}</span>`}`:`<span>已采纳 · 等待${GROUP[a.group]}：${a.label}</span>`;
+  if(as.state==='running') line=`<span>${a.label} · ${as.step}</span>`;
+  if(as.state==='timeout') line=mine?`<span style="color:var(--warn)">${a.label} · 没读到平台状态</span><button class="btn pri sm" data-mark="${id}|${a.id}">标记已执行</button>`:`<span>${a.label} · 等待${GROUP[a.group]}确认</span>`;
+  if(as.state==='done') line=`<span><span class="okmark">✓</span> ${a.label} · ${as.time}${as.manual?'（手动）':''}</span><span class="chip st-review">待复盘 · ${a.review}</span>${mine&&tier==='oneclick'?'<span class="sep"></span><button class="btn sm" data-revoke="'+id+'|'+a.id+'">撤回</button>':''}`;
+  if(as.state==='revoked') line=`<span class="muted">${a.label} · 已撤回 · ${as.time}</span>`;
+  return `<div class="status">${line}</div>`;
+}
+function actionView(){
+  const list=CAUSES.filter(c=>sees(c.groups));
+  const sel=CAUSES.find(c=>c.id===S.sel&&sees(c.groups))||list[0];
+  if(sel&&S.sel!==sel.id)S.sel=sel.id;
+  let left=`<div class="sect">D-1 的归因 · 点一条看判断、信源和方案 · 各项相加 = <button class="num neg" data-src="total">−$1,420</button></div>`;
+  list.forEach(c=>{
+    const cur=c.id===(sel&&sel.id);
+    const ai=c.lvl==='ai'||(c.id==='other'&&S.investigated);
+    const name=c.id==='other'?(S.investigated?'其他 · 竞品降价（Amazon）':'其他（Amazon，待查明）'):c.name;
+    left+=`<div class="cause-row" aria-current="${cur}" data-sel="${c.id}"><div class="hd"><span><b>${name}</b>${ai?' <span class="chip ai">AI 推断</span>':''}${c.exp?` <span class="chip">${c.exp}</span>`:''}</span><button class="num neg" data-src="${c.id}">−$${c.amt}</button></div>`;
+    if(cur){
+      const investigatedView=c.id!=='other'||S.investigated;
+      left+=`<div style="margin-top:7px;font-size:13px"><b>判断：</b>${investigatedView?(c.id==='other'?c.judge2:c.judge):c.judge}</div>`;
+      if(investigatedView)left+=citeRow(c);
+      if(c.id==='other'&&!S.investigated)left+=`<div class="actions"><button class="btn pri" id="inv" ${S.invStep?'disabled':''}>${S.invStep?`AI 调查中 ${S.invStep}/4…`:'让 AI 去查'}</button><span class="muted">调查过程会出现在右边的对话里</span></div>`;
+      if(investigatedView)left+=planBlock(c.strat);
+      if(!boss()&&c.groups.includes(S.role))left+=`<div class="actions"><span class="muted">这个归因对吗</span>${['对','不对','不确定'].map(v=>`<button class="btn sm" aria-pressed="${S.causeFb[c.id]===v}" data-cfb="${c.id}|${v}">${v}</button>`).join('')}</div>`;
+    }
+    left+=`</div>`;
+  });
+  left+=`<div class="muted" style="margin-top:10px">瀑布全景：</div><div class="card" style="margin-top:6px"><div class="chart">${svgWaterfall()}</div><div class="chartnote">虚线框是 AI 推断或待查明的部分，斜线填充是程序估算，实心是实测</div></div>`;
+  return `<h1>归因与方案</h1><div class="crumb">判断 → 信源 → My Plan（方案可修改）· 右下角可以就选中的归因问 Agent · 聊天里说"批准"无效</div>
+  <div class="action">${left}</div>`;
+}
+
+// ===== Agent 页 =====
+function fab(){
+  const el=$('#fab');
+  if(S.mode!=='work'||S.view!=='action'){el.innerHTML='';return}
+  const list=CAUSES.filter(c=>sees(c.groups));
+  const sel=CAUSES.find(c=>c.id===S.sel)||list[0];
+  const name=sel?(sel.id==='other'&&!S.investigated?'其他（待查明）':sel.name):'—';
+  if(!S.fabOpen){el.innerHTML=`<button class="fab" id="fabToggle" aria-expanded="false"><span class="spark">✦</span>问 Agent · <b>${name}</b>${S.achat.length?`（${Math.ceil(S.achat.length/2)} 轮）`:''}</button>`;return}
+  const qq=(sel&&(sel.id!=='other'||S.investigated)?sel.qq||[]:[]);
+  el.innerHTML=`<div class="fabpanel" role="dialog" aria-label="Agent 对话">
+    <div class="hd"><span>Agent · 正在讨论：<b>${name}</b><br><span style="color:var(--faint)">换归因：点左边列表</span></span><button class="btn sm" id="fabToggle">收起</button></div>
+    <div class="msgs" id="amsgs">${S.achat.map(m=>`<div class="msg ${m.me?'me':'bot'}">${m.t}</div>`).join('')||'<div class="muted">可以就选中的归因提问</div>'}</div>
+    <div class="foot"><div class="chips">${qq.map((x,i)=>`<button class="btn sm" data-aq="${sel.id}|${i}">${x[0]}</button>`).join('')}</div>
+    <div class="inrow"><textarea id="aask" rows="1" aria-label="就这条归因提问" placeholder="就这条归因提问"></textarea><button class="btn pri" id="asend">发送</button></div></div>
+  </div>`;
+}
+function agentView(){
+  const empty=!S.agchat.length;
+  return `<div class="agwrap">
+    ${empty?`<div class="hello"><h2>有什么要查的？</h2><div class="muted">能查数、解释归因、给方案提议、查历史经验；不能执行——提议会暂存到工作台的「归因与方案」，由老板采纳${A('Q02 demo 不现场调用模型')}</div></div>`:''}
+    <div class="agmsgs" id="agmsgs">${S.agchat.map(m=>`<div class="msg ${m.me?'me':'bot'}">${m.t}</div>`).join('')}</div>
+    <div class="aginput">
+      <div class="chips">${Object.entries(AGENT_QA).map(([k,v])=>`<button class="btn sm" data-gq="${k}">${v.q}</button>`).join('')}</div>
+      <div class="inrow"><textarea id="gask" rows="1" aria-label="提问" placeholder="问经营数据、归因、方案或历史经验"></textarea><button class="btn pri" id="gsend">发送</button></div>
+    </div>
+  </div>`;
+}
+
+// ===== 执行记录 =====
+function ledgerView(){
+  return `<h1>执行记录</h1><div class="crumb">执行台账只追加、不覆盖：执行、撤回、手动标记各记一行</div>
+  ${S.ledger.length?`<div class="card"><table><tr><th>时间</th><th>动作</th><th>改动</th><th>来源</th><th>状态</th></tr>${S.ledger.map(r=>`<tr><td class="amtnum">${r.t}</td><td>${r.label}</td><td class="amtnum">${r.chg}</td><td>${r.src}</td><td>${r.state}</td></tr>`).join('')}</table></div>`:`<div class="card muted">还没有执行记录：在「行动」里采纳并执行后，这里会出现台账</div>`}`;
+}
+
+// ===== 周报 =====
+function seg(key,n,title,summary,body){
+  const open=S.seg[key];
+  return `<div class="seg" id="${key}"><button data-seg="${key}" aria-expanded="${!!open}"><h3>${n} ${title}</h3><span class="muted">${open?'收起':summary}</span></button>${open?`<div style="margin-top:8px">${body}</div>`:''}</div>`;
+}
+function weeklyView(){
+  const done=[];for(const id in STRATS)acts(id).forEach(a=>{const as=S.st[id].acts[a.id];if(as&&as.state==='done')done.push({label:a.label,t:as.time,review:a.review})});
+  const ops=!boss();
+  let h=`<h1>周报</h1><div class="crumb">统计 D-8 到 D-2（美国时间上周日–周六）· 运营周一 9:00 先看、10:00 推给老板</div>
+  <div class="warnline soft">上周数字修正：D-9 的 Meta 花费 $402 → $415（平台回补），不影响拆解结论</div>
+  <div class="card"><div class="headline">上周卖了 <button class="num" data-src="week">$60,680</button>，比前一周少 $1,240（−2.0%）</div><div class="subline">比预期少 $670 · 去年同一周 +15.9%</div>
+  <div class="kpis" style="margin-top:12px;margin-bottom:0"><div class="kpi"><span class="d">销售额</span><b>$60,680</b><span class="d">预期 $61,350</span></div><div class="kpi"><span class="d">毛利</span><b>约 $39,800</b><span class="d">商品毛利口径</span></div><div class="kpi"><span class="d">广告花费</span><b>$9,170</b><span class="d">日均约 $1,310</span></div><div class="kpi"><span class="d">广告回报</span><b>2.7</b><span class="d">前一周 2.9</span></div></div></div>
+  <div class="card">`;
+  h+=seg('w2','②','为什么变','比预期少 $670 · 2 个原因 + 正常波动',`
+    <div class="r"><div>Amazon 帐篷竞品降价 <span class="chip ai">AI 推断</span></div><div><div class="bar ai" style="width:100%"></div></div><div class="amt">−$320</div></div>
+    <div class="r"><div>月亮椅素材疲劳</div><div><div class="bar" style="width:78%"></div></div><div class="amt">−$250</div></div>
+    <div class="r"><div class="muted">其余为正常波动（不算原因）</div><div><div class="bar" style="width:31%;opacity:.4"></div></div><div class="amt muted">−$100</div></div>
+    <div class="muted" style="margin-top:6px">三项相加 = −$670 · 整周没有命中规则、没发过提醒（素材点击率 D-2 只降 15.6%，阈值 20%）</div>
+    ${ops?(S.sup?`<div class="status">已补充 · ${S.sup.t}</div>`:`<div class="inrow" style="margin-top:8px"><textarea id="supText" rows="1" aria-label="补充说明" placeholder="补充已知原因（10:00 前）"></textarea><button class="btn" id="supSend">提交</button></div>`):(S.sup?`<div class="status">运营补充：${S.sup.v||'—'}</div>`:'<div class="status">运营补充（预置）：投放组"月亮椅新素材已在制作，预计 D+3 上线"</div>')}`);
+  h+=`<div class="seg"><h3 style="font-size:13.5px;margin:0 0 4px">③ 本周策略（按金额取前 3）</h3>${WEEKLY.filter(id=>sees(CAUSES.find(c=>c.id===STRATS[id].cause).groups)).map(id=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;align-items:baseline"><button class="num" style="border-bottom:none;color:var(--link)" data-sel-go="${STRATS[id].cause}">${STRATS[id].title}</button><span class="chip st-${status(id)}">${TXT[status(id)]}</span></div>`).join('')||'<span class="muted">没有和你相关的策略</span>'}</div>`;
+  h+=seg('w4','④','上周策略的结果',`1 条有效 · 1 条待复盘${done.length?` · 本次演示 ${done.length} 条`:''}`,`<table><tr><th>动作</th><th>执行</th><th>预计 → 实际</th><th>状态</th></tr>
+    <tr><td>清理品牌词组重复关键词（CS-0035）</td><td class="amtnum">D-10</td><td class="amtnum">省 $15–30/天 → $22/天</td><td><span class="chip">已复盘：有效（D-3）</span></td></tr>
+    <tr><td>睡袋详情页补差评回应（CS-0036）</td><td class="amtnum">D-4</td><td>—</td><td><span class="chip st-review">待复盘 · 执行后 7 天（D+3）</span></td></tr>
+    ${done.map(r=>`<tr><td>${r.label}</td><td class="amtnum">${r.t}</td><td>—</td><td><span class="chip st-review">待复盘 · ${r.review}</span></td></tr>`).join('')}</table><div class="muted">已撤回的不复盘，见执行记录</div>`);
+  h+=seg('w5','⑤','本周提醒','1 条整体',`<button class="num" style="border-bottom:none;color:var(--link)" data-view-go="daily">D-1 · 昨日销售额比预期少 $1,420</button> <span class="muted">${S.alertFb||'未反馈'}</span>`);
+  return h+'</div>';
+}
+
+// ===== 配套 =====
+function libView(){
+  const rows=LIB.map(r=>({r,inv:!!S.libInvalid[r[0]]}));
+  const list=S.libTab==='in'?rows.filter(x=>!x.inv):S.libTab==='bad'?rows.filter(x=>x.inv):[];
+  const sum=['断货','素材疲劳','广告成本突涨'].map(t=>{const c=rows.filter(x=>!x.inv&&x.r[2]===t),ok=c.filter(x=>x.r[6]==='有效').length;return `<span class="chip ${c.length===1?'ai':''}">${t} ${c.length===1?'线索':''} ${ok}/${c.length}</span>`}).join('');
+  return `<h1>经验库</h1><div class="crumb">AI 不能确认入库；老板和对应组运营可以确认、作废 · 经验不跨客户共享</div><div>${sum}</div>
+  <div class="actions" role="tablist">${[['wait','待确认'],['in','已入库'],['bad','失效']].map(([k,v])=>`<button class="btn sm" role="tab" aria-selected="${S.libTab===k}" aria-pressed="${S.libTab===k}" data-lib="${k}">${v}</button>`).join('')}</div>
+  <div style="height:12px"></div>
+  ${list.length?`<div class="card" style="overflow-x:auto"><table><tr><th>编号</th><th>类型</th><th>做了什么</th><th>预计 → 实际</th><th>判定</th><th></th></tr>${list.map(({r,inv})=>`<tr><td class="amtnum">${r[0]}<br><span class="muted">${r[1]}</span></td><td>${r[2]}</td><td>${r[3]}</td><td class="amtnum">${r[4]} → ${r[5]}</td><td>${r[6]==='有效'?'<span style="color:var(--ok);font-weight:600">有效</span>':'<span class="muted">无效</span>'}</td><td>${inv?'<span class="muted">已作废</span>':`<button class="btn sm" data-invalid="${r[0]}">作废</button>`}</td></tr>`).join('')}</table></div>`
+  :`<div class="card muted">${S.libTab==='wait'?'没有待确认的经验（复盘出结果后出现在这里）':'没有作废的经验'}</div>`}`;
+}
+function sourcesView(){
+  const rows=[
+    ['Shopify 独立站','订单、库存、会话（全店和来源层面）','已连接（演示数据）','订单实时；退款 60 天内可能变化'],
+    ['Amazon 美国站','销售与流量、FBA 库存、费用','已连接（演示数据）','修正期官方未写，试用前两周观察'],
+    ['Meta 广告','花费、点击、频次、疲劳标记','已连接（演示数据）','28 天内可能修正'],
+    ['Google 广告','花费、CPC、点击、转化','已连接（演示数据）','按转化窗口修正'],
+    ['竞品数据','对标商品价格（Keepa / 页面抓取）','已连接（演示数据）','抓取失败时竞品降价降级为"缺数据"'],
+    ['成本表','每个商品的单位成本（客户上传）','已上传（演示数据）','过期要提醒更新（试用）'],
+  ];
+  return `<h1>数据源</h1><div class="crumb">全部只读 · 不存消费者个人信息 · 每个数字都能点开看来源和算法</div>
+  <div class="card"><table><tr><th>来源</th><th>拿什么</th><th>状态</th><th>成熟度 / 说明</th></tr>${rows.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td><span style="color:var(--ok)">●</span> ${r[2]}</td><td class="muted" style="font-size:12px">${r[3]}</td></tr>`).join('')}</table></div>
+  <div class="card"><div class="sect">口径说明（开通时和客户逐项确认）</div>
+  <div style="font-size:13px">销售额为下单口径（不含税和运费，退款单独记）；渠道收入并列"平台自报"和"订单实收"两列，拆解只用订单实收。例：近 7 天 Meta 自报 186 单，订单里来自 Meta 121 单。</div></div>`;
+}
+function setView(){return `<h1>设置</h1><div class="crumb">试用阶段开放</div><div class="card">${['授权管理（各平台授权状态、撤销入口）','对标商品（每个主力商品 3–5 个）','成本表上传与过期提醒','本店口径说明','问题清单和提醒门槛（历史回放）','账号和角色（谁能采纳、谁能执行和撤回）'].map(x=>`<div style="padding:8px 0;border-bottom:1px solid var(--line-soft)">${x} <span class="muted">—</span></div>`).join('')}</div>`}
+
+// ===== 模拟执行 =====
+function logLedger(e){S.ledger.unshift(e)}
+function run(id,aid,steps,done){
+  const as=S.st[id].acts[aid];as.state='running';let i=0;
+  const t=()=>{if(i<steps.length){as.step=steps[i++];render();setTimeout(t,800)}else done()};t();
+}
+function exec(id,aid){
+  const a=acts(id).find(x=>x.id===aid),failRev=S.tg.failReview&&id==='s5',tier=tierOf(a,failRev);
+  const as=S.st[id].acts[aid]=S.st[id].acts[aid]||{};as.failed=false;
+  if(tier==='oneclick'&&S.tg.checkFail){as.state='idle';as.failed=true;render();return}
+  const steps=tier==='oneclick'?['核对当前价…','写入…','回读确认…']:['等待平台确认…'];
+  run(id,aid,steps,()=>{
+    if(S.tg.timeout)as.state='timeout';
+    else{as.state='done';as.time=now();as.manual=false;logLedger({t:as.time,label:a.label,chg:`${a.from} → ${actTo(id,a)}`,src:'回读',state:'已确认执行',review:a.review})}
+    render();
+  });
+}
+function revoke(id,aid){const a=acts(id).find(x=>x.id===aid);const as=S.st[id].acts[aid];
+  run(id,aid,['核对当前价…',`恢复为 ${a.from}…`,'回读确认…'],()=>{as.state='revoked';as.time=now();logLedger({t:as.time,label:a.label,chg:`${actTo(id,a)} → ${a.from}`,src:'回读',state:'已撤回',review:'—'});render()});}
+
+// ===== 侧栏和弹窗 =====
+function overlay(){
+  let h='';
+  if(S.sheet){
+    const d=SRC[S.sheet];
+    h+=`<aside class="sheet" aria-label="数字来源"><div style="display:flex;justify-content:space-between"><b>数字来源</b><button class="btn sm" id="closeSheet">关闭</button></div>
+    <div class="bignum">${d.v}</div><div class="muted">${d.n}</div>
+    ${S.tg.missing&&S.sheet==='fatigue'?'<div class="warnline soft" style="margin-top:10px">缺失：Meta 接口没有返回</div>':''}
+    <dl style="margin-top:14px"><dt>平台</dt><dd>${d.p}</dd><dt>时间段</dt><dd>${d.t}</dd><dt>说明</dt><dd>${d.a}</dd><dt>确定级别</dt><dd>${d.l}</dd><dt>成熟度</dt><dd>${d.m}</dd></dl></aside>`;
+  }
+  const m=S.modal;
+  if(m){
+    h+='<div class="mask"><div class="modal" role="dialog" aria-modal="true">';
+    if(m.type==='go'){const [id,aid]=m.key.split('|'),a=acts(id).find(x=>x.id===aid),tier=tierOf(a,S.tg.failReview&&id==='s5');
+      h+=`<h2>${{oneclick:'确认执行',backend:'去后台修改',task:'生成任务'}[tier]}</h2>
+      <div class="change"><div class="muted">${a.plat}</div><div><b>${a.label}</b></div><div>${a.from} → <b>${actTo(id,a)}</b></div>${tier==='task'?'<div class="muted">负责人 '+GROUP[a.group]+' · 截止 —'+A('Q36')+'</div>':''}</div>
+      <div class="muted">${tier==='oneclick'?'执行前先核对平台当前值；执行后可撤回。':tier==='backend'?'改完后系统自动回读确认。':'任务生成后，系统回读确认是否已创建。'}</div>
+      <div class="actions">${tier==='backend'?'<button class="btn" id="copy">复制修改内容</button>':''}<span class="sep"></span><button class="btn" id="mCancel">取消</button><button class="btn pri" id="goOk">${tier==='oneclick'?'确认执行':tier==='backend'?'打开后台':'生成'}</button></div>`;}
+    if(m.type==='adopt2') h+=`<h2>二次确认</h2><div class="change">这次补货成本 <b>$${qtyCost().toLocaleString()}</b>，超过 $10,000。确认采纳吗？</div><div class="actions"><span class="sep"></span><button class="btn" id="mCancel">取消</button><button class="btn pri" id="ad2Ok">确认采纳</button></div>`;
+    if(m.type==='reject') h+=`<h2>不采纳的原因</h2>${['不具体','不可行','不认同原因','其他'].map(v=>`<label style="display:block;padding:2px 0"><input type="radio" name="rr" value="${v}"> ${v}</label>`).join('')}<textarea id="rrText" rows="1" style="width:100%;margin-top:8px" placeholder="选"其他"时必填"></textarea><div class="muted" id="rrErr" style="color:var(--warn)"></div><div class="actions"><span class="sep"></span><button class="btn" id="mCancel">取消</button><button class="btn pri" id="rrOk">确定</button></div>`;
+    if(m.type==='revoke') h+=`<h2>撤回</h2><div class="change">COOL-01 基础价 $${S.params.price} → <b>$149</b></div><div class="actions"><span class="sep"></span><button class="btn" id="mCancel">取消</button><button class="btn pri" id="rvOk">确认撤回</button></div>`;
+    if(m.type==='mark') h+=`<h2>标记已执行</h2><textarea id="mkText" rows="2" style="width:100%" placeholder="实际做了什么（必填）"></textarea><div class="actions"><span class="sep"></span><button class="btn" id="mCancel">取消</button><button class="btn pri" id="mkOk">确定</button></div>`;
+    if(m.type==='invalid') h+=`<h2>作废 ${m.id}？</h2><div class="muted">保留记录，不再被引用。</div><div class="actions"><span class="sep"></span><button class="btn" id="mCancel">取消</button><button class="btn pri" id="ivOk">作废</button></div>`;
+    h+='</div></div>';
+  }
+  if(S.toast)h+=`<div class="toast">${S.toast}</div>`;
+  $('#overlay').innerHTML=h;
+  bindOverlay();
+}
+function bindOverlay(){
+  const on=(s,f)=>{const e=$(s);if(e)e.onclick=f};
+  on('#closeSheet',()=>{S.sheet=null;overlay()});
+  on('#mCancel',()=>{S.modal=null;overlay()});
+  on('#copy',()=>{toast('已复制')});
+  on('#goOk',()=>{const [id,aid]=S.modal.key.split('|');S.modal=null;overlay();exec(id,aid)});
+  on('#ad2Ok',()=>{S.st[S.modal.id].status='adopted';S.modal=null;render()});
+  on('#rrOk',()=>{const v=(document.querySelector('[name=rr]:checked')||{}).value,t=$('#rrText').value.trim();
+    if(!v||(v==='其他'&&!t)){$('#rrErr').textContent=!v?'请选一个原因':'请填一句';return}
+    const st=S.st[S.modal.id];st.status='rejected';st.reason=v+(t?'：'+esc(t):'');S.modal=null;render()});
+  on('#rvOk',()=>{const [id,aid]=S.modal.key.split('|');S.modal=null;overlay();revoke(id,aid)});
+  on('#mkOk',()=>{const t=$('#mkText').value.trim();if(!t)return;const [id,aid]=S.modal.key.split('|');const a=acts(id).find(x=>x.id===aid);Object.assign(S.st[id].acts[aid],{state:'done',time:now(),manual:true});logLedger({t:now(),label:a.label,chg:`${a.from} → ${actTo(id,a)}`,src:'手动',state:'已确认执行',review:a.review});S.modal=null;render()});
+  on('#ivOk',()=>{S.libInvalid[S.modal.id]=1;S.modal=null;render()});
+  document.querySelectorAll('#overlay [data-src]').forEach(e=>e.onclick=()=>{S.sheet=e.dataset.src;overlay()});
+}
+
+// ===== 渲染与事件 =====
+function render(){
+  document.body.classList.toggle('show-anno',S.anno);
+  if(S.mode==='work'&&S.view==='daily')S.alertRead=true;
+  consoleBar();nav();topbar();
+  $('#main').className=S.mode==='agent'?'agentbg':'';
+  const views={daily:dailyView,weekly:weeklyView,action:actionView,ledger:ledgerView,lib:libView,sources:sourcesView,set:setView};
+  if(S.mode==='agent'){$('#main').innerHTML=agentView();fab();overlay();bind();const gm=$('#agmsgs');if(gm)gm.scrollTop=gm.scrollHeight;return}
+  $('#main').innerHTML=S.tg.loading&&['daily','action','weekly'].includes(S.view)?`<h1>${{daily:'每日监测',action:'归因与方案',weekly:'周报'}[S.view]}</h1><div class="card"><div class="sk" style="width:35%"></div><div class="sk"></div><div class="sk" style="width:60%"></div></div><div class="card"><div class="sk"></div><div class="sk" style="width:70%"></div></div>`:views[S.view]();
+  fab();overlay();bind();
+  const am=$('#amsgs');if(am)am.scrollTop=am.scrollHeight;
+  const gm=$('#agmsgs');if(gm)gm.scrollTop=gm.scrollHeight;
+}
+function bind(){
+  const on=(sel,fn)=>document.querySelectorAll('#main '+sel+', #nav '+sel+', #fab '+sel).forEach(e=>e.onclick=ev=>{ev.stopPropagation();fn(e)});
+  on('#fabToggle',()=>{S.fabOpen=!S.fabOpen;fab();const am=$('#amsgs');if(am)am.scrollTop=am.scrollHeight;bind()});
+  on('[data-mode]',e=>{S.mode=e.dataset.mode;render()});
+  on('[data-view]',e=>{S.mode='work';S.view=e.dataset.view;render()});
+  on('[data-view-go]',e=>{S.mode='work';S.view=e.dataset.viewGo;render();window.scrollTo({top:0})});
+  on('[data-sel-go]',e=>{S.mode='work';S.view='action';S.sel=e.dataset.selGo;render();window.scrollTo({top:0})});
+  on('[data-src]',e=>{S.sheet=e.dataset.src;overlay()});
+  on('[data-fb]',e=>{S.alertFb=e.dataset.fb;render()});
+  on('[data-seg]',e=>{S.seg[e.dataset.seg]=!S.seg[e.dataset.seg];render()});
+  on('[data-more]',e=>{S.more[e.dataset.more]=!S.more[e.dataset.more];render()});
+  on('[data-alt]',e=>{const [id,k]=e.dataset.alt.split('|');S.st[id].choice=k||null;render()});
+  on('[data-adopt]',e=>{const id=e.dataset.adopt;
+    if(id==='s1'&&qtyCost()>10000){S.modal={type:'adopt2',id};overlay();return}
+    S.st[id].status='adopted';render()});
+  on('[data-decide]',e=>{S.st[e.dataset.decide].status='decided';render()});
+  on('[data-reject]',e=>{S.modal={type:'reject',id:e.dataset.reject};overlay()});
+  on('[data-go]',e=>{S.modal={type:'go',key:e.dataset.go};overlay()});
+  on('[data-revoke]',e=>{S.modal={type:'revoke',key:e.dataset.revoke};overlay()});
+  on('[data-mark]',e=>{S.modal={type:'mark',key:e.dataset.mark};overlay()});
+  on('[data-cfb]',e=>{const [c,v]=e.dataset.cfb.split('|');S.causeFb[c]=v;render()});
+  on('[data-lib]',e=>{S.libTab=e.dataset.lib;render()});
+  on('[data-invalid]',e=>{S.modal={type:'invalid',id:e.dataset.invalid};overlay()});
+  on('.cause-row',e=>{if(S.sel!==e.dataset.sel){S.sel=e.dataset.sel;render()}});
+  // 行动页 Agent 栏
+  on('[data-aq]',e=>{const [cid,i]=e.dataset.aq.split('|');const c=CAUSES.find(x=>x.id===cid);const x=c.qq[+i];
+    S.achat.push({me:1,t:x[0]},{t:x[1]});S.fabOpen=true;render()});
+  on('#asend',()=>{const t=$('#aask').value.trim();if(!t)return;
+    const sel=CAUSES.find(c=>c.id===S.sel);
+    const a=/批准|执行|帮我改|直接/.test(t)?'聊天里说"批准""执行"不生效：请老板在左边 My Plan 上点"采纳"，再由对应组点"执行"。':`演示版先回答左下方的推荐问题（当前归因：${sel?sel.name:'—'}）。`;
+    S.achat.push({me:1,t:esc(t)},{t:a});S.fabOpen=true;render()});
+  on('#inv',()=>{S.invStep=1;S.fabOpen=true;
+    const c=CAUSES.find(x=>x.id==='other');
+    S.achat.push({me:1,t:'帮我查一下 Amazon 那 $250 是什么原因'});render();
+    let i=0;const t=()=>{if(i<c.traj.length){S.achat.push({t:'第 '+(i+1)+' 步：'+c.traj[i]});i++;S.invStep=Math.min(4,i+0);render();setTimeout(t,800)}else{S.investigated=true;S.invStep=0;S.achat.push({t:'结论：'+c.judge2+'　已在左边生成方案（限时优惠券）。'});render()}};setTimeout(t,700)});
+  // Agent 页
+  on('[data-gq]',e=>{const x=AGENT_QA[e.dataset.gq];S.agchat.push({me:1,t:x.q},{t:x.a});render()});
+  on('#gsend',()=>{const t=$('#gask').value.trim();if(!t)return;
+    const a=/批准|执行|帮我改|直接|降到/.test(t)?AGENT_QA.EXE.a:'演示版先回答这些问题：'+Object.values(AGENT_QA).slice(0,3).map(x=>`「${x.q}」`).join('');
+    S.agchat.push({me:1,t:esc(t)},{t:a});render()});
+  on('#supSend',()=>{S.sup={v:esc($('#supText').value.trim()),t:now()};render()});
+  document.querySelectorAll('input.param').forEach(el=>{
+    el.onclick=ev=>ev.stopPropagation();
+    el.onchange=()=>{const v=parseInt(el.value,10);if(!isFinite(v)||v<0)return;S.params[el.dataset.param]=v;render()};
+  });
+}
+render();
+</script>
+</body>
+</html>
